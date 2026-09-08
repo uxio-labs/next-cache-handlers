@@ -4,17 +4,12 @@ Redis cache handler for Next.js 16
 [`cacheHandlers`](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheHandlers)
 (`"use cache"` / `"use cache: remote"`).
 
-Next.js requires a **filesystem path** to a module whose default export is the handler. You cannot
-pass a factory result in `next.config`.
-
 ## Install
 
 ```bash
 pnpm add cache-fn redis
 pnpm add -D next@16
 ```
-
-`next` `^16` and `redis` are peer dependencies.
 
 ## Usage
 
