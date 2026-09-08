@@ -68,6 +68,35 @@ describe("createCacheHandler get/set", () => {
     expect(await readText(got!.value)).toBe("second")
   })
 
+  it("keeps the later write when overlapping sets resolve out of order", async () => {
+    const handler = createCacheHandler(createMemoryStore())
+
+    let resolveSet1!: (entry: ReturnType<typeof makeEntry>) => void
+    let resolveSet2!: (entry: ReturnType<typeof makeEntry>) => void
+    const pendingSet1 = new Promise<ReturnType<typeof makeEntry>>((resolve) => {
+      resolveSet1 = resolve
+    })
+    const pendingSet2 = new Promise<ReturnType<typeof makeEntry>>((resolve) => {
+      resolveSet2 = resolve
+    })
+
+    const set1Promise = handler.set("k1", pendingSet1)
+    const set2Promise = handler.set("k1", pendingSet2)
+
+    resolveSet2(
+      makeEntry({ value: bytesToStream(new TextEncoder().encode("second")) }),
+    )
+    resolveSet1(
+      makeEntry({ value: bytesToStream(new TextEncoder().encode("first")) }),
+    )
+
+    await Promise.all([set1Promise, set2Promise])
+
+    const got = await handler.get("k1", [])
+    expect(got).toBeDefined()
+    expect(await readText(got!.value)).toBe("second")
+  })
+
   it("waits for an in-flight set before get", async () => {
     const handler = createCacheHandler(createMemoryStore())
     let resolveEntry!: (entry: ReturnType<typeof makeEntry>) => void

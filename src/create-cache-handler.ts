@@ -13,6 +13,7 @@ import type { CacheHandler, CacheStore, StoredTagEntry } from "./types.ts"
 export function createCacheHandler(store: CacheStore): CacheHandler {
   const localTagsManifest = new Map<string, StoredTagEntry>()
   const pendingSets = new Map<string, Promise<void>>()
+  const setGenerations = new Map<string, number>()
 
   return {
     async get(cacheKey, softTags) {
@@ -57,9 +58,15 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
       })
       pendingSets.set(cacheKey, pendingPromise)
 
+      const generation = (setGenerations.get(cacheKey) ?? 0) + 1
+      setGenerations.set(cacheKey, generation)
+
       try {
         const entry = await pendingEntry
         const body = await readStreamToBuffer(entry.value)
+        if (setGenerations.get(cacheKey) !== generation) {
+          return
+        }
         const hash = hashCacheKey(cacheKey)
         await store.setEntry(
           hash,
