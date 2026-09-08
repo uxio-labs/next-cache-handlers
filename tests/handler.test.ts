@@ -188,3 +188,48 @@ describe("createCacheHandler get/set", () => {
     await expect(handler.get("k1", [])).resolves.toBeDefined()
   })
 })
+
+describe("createCacheHandler tags", () => {
+  it("misses after explicit tags are hard-expired", async () => {
+    const handler = createCacheHandler(createMemoryStore())
+    await handler.set("k1", pending(makeEntry({ tags: ["posts"], timestamp: Date.now() - 1000 })))
+    await handler.updateTags(["posts"])
+    await expect(handler.get("k1", [])).resolves.toBeUndefined()
+  })
+
+  it("misses when a soft tag was expired after the entry timestamp", async () => {
+    const handler = createCacheHandler(createMemoryStore())
+    await handler.set("k1", pending(makeEntry({ tags: ["posts"], timestamp: Date.now() - 1000 })))
+    await handler.updateTags(["_N_T_/blog"])
+    await expect(handler.get("k1", ["_N_T_/blog"])).resolves.toBeUndefined()
+  })
+
+  it("returns revalidate -1 when tags are stale", async () => {
+    const handler = createCacheHandler(createMemoryStore())
+    await handler.set("k1", pending(makeEntry({ tags: ["posts"], timestamp: Date.now() - 1000 })))
+    await handler.updateTags(["posts"], { expire: 60 })
+    const got = await handler.get("k1", [])
+    expect(got?.revalidate).toBe(-1)
+    expect(await readText(got!.value)).toBe("hello")
+  })
+
+  it("getExpiration returns the max expired timestamp", async () => {
+    const handler = createCacheHandler(createMemoryStore())
+    await handler.updateTags(["a"])
+    await handler.updateTags(["b"])
+    const expiration = await handler.getExpiration(["a", "b", "missing"])
+    expect(expiration).toBeGreaterThan(0)
+    expect(await handler.getExpiration(["missing"])).toBe(0)
+  })
+
+  it("refreshTags replaces the local manifest from the store", async () => {
+    const store = createMemoryStore()
+    const writer = createCacheHandler(store)
+    const reader = createCacheHandler(store)
+    await writer.set("k1", pending(makeEntry({ tags: ["posts"], timestamp: Date.now() - 1000 })))
+    await writer.updateTags(["posts"])
+    await expect(reader.get("k1", [])).resolves.toBeDefined()
+    await reader.refreshTags()
+    await expect(reader.get("k1", [])).resolves.toBeUndefined()
+  })
+})

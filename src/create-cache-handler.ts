@@ -114,7 +114,7 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
     },
 
     async updateTags(tags, durations) {
-      const now = Math.round(performance.timeOrigin + performance.now())
+      const now = Date.now()
 
       const apply = async () => {
         for (const tag of tags) {
@@ -139,17 +139,19 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
         }
         await store.setTagEntries(toWrite)
 
-        const hashesToDelete = new Set<string>()
-        for (const tag of tags) {
-          for (const hash of await store.getTagRefs(tag)) {
-            hashesToDelete.add(hash)
+        if (durations?.expire === 0) {
+          const hashesToDelete = new Set<string>()
+          for (const tag of tags) {
+            for (const hash of await store.getTagRefs(tag)) {
+              hashesToDelete.add(hash)
+            }
           }
-        }
-        for (const hash of hashesToDelete) {
-          const entry = await store.deleteEntry(hash)
-          if (entry) {
-            for (const tag of entry.tags) {
-              await store.removeTagRefs(tag, [hash])
+          for (const hash of hashesToDelete) {
+            const entry = await store.deleteEntry(hash)
+            if (entry) {
+              for (const tag of entry.tags) {
+                await store.removeTagRefs(tag, [hash])
+              }
             }
           }
         }
