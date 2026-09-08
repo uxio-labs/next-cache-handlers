@@ -56,12 +56,10 @@ export function createRedisStore(options: RedisCacheHandlerOptions): CacheStore 
 
     async deleteEntry(hash) {
       const redis = await getClient()
-      const key = `${prefix}:e:${hash}`
-      const raw = await redis.get(key)
+      const raw = await redis.getDel(`${prefix}:e:${hash}`)
       if (!raw) {
         return undefined
       }
-      await redis.del(key)
       try {
         return JSON.parse(raw) as SerializedEntry
       } catch {
