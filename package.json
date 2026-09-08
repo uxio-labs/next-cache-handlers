@@ -1,0 +1,68 @@
+{
+  "name": "cache-fn",
+  "version": "1.0.0",
+  "description": "Redis cache handler for Next.js cacheHandlers (\"use cache\")",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "typesafe",
+    "typescript",
+    "cache",
+    "nextjs"
+  ],
+  "author": "Mattia Dalzocchio <mattiadalzocchio@me.com>",
+  "homepage": "https://github.com/uxio-labs/cache-fn#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxio-labs/cache-fn.git"
+  },
+  "bugs": {
+    "url": "https://github.com/uxio-labs/cache-fn/issues"
+  },
+  "module": "./dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./redis": {
+      "types": "./dist/redis.d.ts",
+      "import": "./dist/redis.js",
+      "default": "./dist/redis.js"
+    }
+  },
+  "packageManager": "pnpm@11.20.0+sha512.9a6f330a95b66446ea088faf1521405a8a01f07fde7124cc9958dfed52d4bb436737e65b08f85f37b46fcba375092558ac51262b816844b22f63406ed166bfee",
+  "scripts": {
+    "dev": "rm -rf dist && tsdown --watch",
+    "build": "tsdown --minify",
+    "test": "vitest",
+    "lint": "pnpm oxlint",
+    "format": "pnpm oxfmt",
+    "format:check": "pnpm oxfmt --check",
+    "typecheck": "pnpm tsc --noEmit"
+  },
+  "peerDependencies": {
+    "next": "^16",
+    "redis": "^5"
+  },
+  "peerDependenciesMeta": {
+    "redis": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@testcontainers/redis": "^11.14.0",
+    "@types/node": "26.1.2",
+    "oxfmt": "0.62.0",
+    "oxlint": "1.77.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "redis": "^5.12.1",
+    "testcontainers": "^11.14.0",
+    "tsdown": "0.22.14",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}
