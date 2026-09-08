@@ -15,6 +15,12 @@ describe("createRedisCacheHandler", () => {
     expect(() => createRedisCacheHandler({ url: "redis://localhost:6379", database: -1 })).toThrow(
       /database/,
     )
+    expect(() =>
+      createRedisCacheHandler({
+        url: "redis://localhost:6379",
+        database: Number.MAX_SAFE_INTEGER + 1,
+      }),
+    ).toThrow(/database/)
   })
 })
 
@@ -52,17 +58,39 @@ describe("Redis cache handler", () => {
     await handler.set("k1", pending(makeEntry({ expire: 120, revalidate: 30 })))
     const redis = createClient({ url })
     await redis.connect()
-    const ttl = await redis.ttl(`${prefix}:e:${hashCacheKey("k1")}`)
-    await redis.quit()
-    expect(ttl).toBeGreaterThan(0)
-    expect(ttl).toBeLessThanOrEqual(120)
+    try {
+      const ttl = await redis.ttl(`${prefix}:e:${hashCacheKey("k1")}`)
+      expect(ttl).toBeGreaterThan(0)
+      expect(ttl).toBeLessThanOrEqual(120)
+    } finally {
+      await redis.quit()
+    }
   })
 
-  it("deletes tagged entries on updateTags", async () => {
+  it("misses after updateTags via local/remote manifest", async () => {
     const handler = createRedisCacheHandler({ url, prefix: "t-del" })
     await handler.set("k1", pending(makeEntry({ tags: ["posts"], timestamp: Date.now() - 1000 })))
     await handler.updateTags(["posts"])
     await expect(handler.get("k1", [])).resolves.toBeUndefined()
+  })
+
+  it("hard-deletes tagged entries and clears tag refs when expire is zero", async () => {
+    const prefix = "t-hard-del"
+    const handler = createRedisCacheHandler({ url, prefix })
+    const hash = hashCacheKey("k1")
+    const refKey = `${prefix}:r:${Buffer.from("posts", "utf8").toString("base64url")}`
+    await handler.set("k1", pending(makeEntry({ tags: ["posts"] })))
+
+    await handler.updateTags(["posts"], { expire: 0 })
+
+    const redis = createClient({ url })
+    await redis.connect()
+    try {
+      await expect(redis.exists(`${prefix}:e:${hash}`)).resolves.toBe(0)
+      await expect(redis.sMembers(refKey)).resolves.toEqual([])
+    } finally {
+      await redis.quit()
+    }
   })
 
   it("exposes tag updates to a second handler after refreshTags", async () => {

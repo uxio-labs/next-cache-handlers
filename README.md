@@ -39,11 +39,11 @@ export default nextConfig
 
 Environment:
 
-| Variable          | Required | Description                                                                                     |
-| ----------------- | -------- | ----------------------------------------------------------------------------------------------- |
-| `REDIS_URL`       | yes      | Redis connection URL. If unset, the handler loads but always misses (so `next build` survives). |
-| `REDIS_DB`        | no       | Logical Redis database index                                                                    |
-| `CACHE_FN_PREFIX` | no       | Key prefix. Default `next:cache:v1`                                                             |
+| Variable          | Required | Description                                                                                      |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------------ |
+| `REDIS_URL`       | yes      | Redis connection URL. If unset, the handler loads but always misses (so `next build` survives).  |
+| `REDIS_DB`        | no       | Logical Redis database index. Invalid values throw when the handler loads if `REDIS_URL` is set. |
+| `CACHE_FN_PREFIX` | no       | Key prefix. Default `next:cache:v1`                                                              |
 
 ### Factory (custom URL / db / prefix)
 

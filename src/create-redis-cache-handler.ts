@@ -9,7 +9,7 @@ export function createRedisCacheHandler(options: RedisCacheHandlerOptions): Cach
   }
   if (
     options.database !== undefined &&
-    (!Number.isInteger(options.database) || options.database < 0)
+    (!Number.isSafeInteger(options.database) || options.database < 0)
   ) {
     throw new Error(
       `createRedisCacheHandler: database must be a non-negative integer, got ${JSON.stringify(options.database)}`,

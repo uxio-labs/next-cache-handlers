@@ -1,5 +1,3 @@
-import { createClient, type RedisClientType } from "redis"
-
 import { DEFAULT_PREFIX } from "./types.ts"
 
 import type {
@@ -8,6 +6,7 @@ import type {
   SerializedEntry,
   StoredTagEntry,
 } from "./types.ts"
+import type { RedisClientType } from "redis"
 
 function refKey(prefix: string, tag: string): string {
   return `${prefix}:r:${Buffer.from(tag, "utf8").toString("base64url")}`
@@ -19,6 +18,7 @@ export function createRedisStore(options: RedisCacheHandlerOptions): CacheStore 
 
   async function getClient(): Promise<RedisClientType> {
     if (!client) {
+      const { createClient } = await import("redis")
       client = createClient({
         url: options.url,
         ...(options.database !== undefined ? { database: options.database } : {}),

@@ -40,6 +40,14 @@ describe("cache-fn/redis env handler", () => {
     )
   })
 
+  it("throws when REDIS_DB exceeds the safe integer range", async () => {
+    vi.stubEnv("REDIS_URL", "redis://localhost:6379")
+    vi.stubEnv("REDIS_DB", String(Number.MAX_SAFE_INTEGER + 1))
+    await expect(import("../src/redis.ts")).rejects.toThrow(
+      /REDIS_DB must be a non-negative safe integer/,
+    )
+  })
+
   it("accepts valid REDIS_DB values without connecting", async () => {
     vi.stubEnv("REDIS_URL", "redis://localhost:6379")
     vi.stubEnv("REDIS_DB", "0")

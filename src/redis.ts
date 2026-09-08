@@ -11,7 +11,11 @@ function parseDatabase(raw: string | undefined): number | undefined {
   if (!/^\d+$/.test(raw)) {
     throw new Error(`REDIS_DB must be a non-negative integer, got ${JSON.stringify(raw)}`)
   }
-  return Number.parseInt(raw, 10)
+  const database = Number.parseInt(raw, 10)
+  if (!Number.isSafeInteger(database)) {
+    throw new Error(`REDIS_DB must be a non-negative safe integer, got ${JSON.stringify(raw)}`)
+  }
+  return database
 }
 
 function createDisabledHandler(): CacheHandler {
