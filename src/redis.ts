@@ -8,11 +8,10 @@ function parseDatabase(raw: string | undefined): number | undefined {
   if (raw === undefined || raw === "") {
     return undefined
   }
-  const n = Number.parseInt(raw, 10)
-  if (!Number.isFinite(n) || n < 0) {
+  if (!/^\d+$/.test(raw)) {
     throw new Error(`REDIS_DB must be a non-negative integer, got ${JSON.stringify(raw)}`)
   }
-  return n
+  return Number.parseInt(raw, 10)
 }
 
 function createDisabledHandler(): CacheHandler {
