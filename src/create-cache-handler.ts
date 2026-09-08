@@ -105,12 +105,10 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
       }
     },
 
-    async getExpiration(tags) {
-      try {
-        return Math.max(0, ...tags.map((tag) => localTagsManifest.get(tag)?.expired ?? 0))
-      } catch {
-        return 0
-      }
+    getExpiration(tags) {
+      return Promise.resolve(
+        Math.max(0, ...tags.map((tag) => localTagsManifest.get(tag)?.expired ?? 0)),
+      )
     },
 
     async updateTags(tags, durations) {

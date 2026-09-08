@@ -17,23 +17,22 @@ describe("createCacheHandler get/set", () => {
     const entry = makeEntry({ tags: ["posts"], stale: 12, expire: 99, revalidate: 30 })
     await handler.set("k1", pending(entry))
 
-    const got = await handler.get("k1", [])
-    expect(got).toBeDefined()
-    expect(got?.tags).toEqual(["posts"])
-    expect(got?.stale).toBe(12)
-    expect(got?.timestamp).toBe(entry.timestamp)
-    expect(got?.expire).toBe(99)
-    expect(got?.revalidate).toBe(30)
-    expect(await readText(got!.value)).toBe("hello")
+    const got = requireEntry(await handler.get("k1", []))
+    expect(got.tags).toEqual(["posts"])
+    expect(got.stale).toBe(12)
+    expect(got.timestamp).toBe(entry.timestamp)
+    expect(got.expire).toBe(99)
+    expect(got.revalidate).toBe(30)
+    expect(await readText(got.value)).toBe("hello")
   })
 
   it("returns a fresh stream on every get", async () => {
     const handler = createCacheHandler(createMemoryStore())
     await handler.set("k1", pending(makeEntry()))
-    const a = await handler.get("k1", [])
-    const b = await handler.get("k1", [])
-    expect(await readText(a!.value)).toBe("hello")
-    expect(await readText(b!.value)).toBe("hello")
+    const a = requireEntry(await handler.get("k1", []))
+    const b = requireEntry(await handler.get("k1", []))
+    expect(await readText(a.value)).toBe("hello")
+    expect(await readText(b.value)).toBe("hello")
   })
 
   it("waits for the latest in-flight set when two sets overlap", async () => {
@@ -63,9 +62,8 @@ describe("createCacheHandler get/set", () => {
     )
     await set2Promise
 
-    const got = await getPromise
-    expect(got).toBeDefined()
-    expect(await readText(got!.value)).toBe("second")
+    const got = requireEntry(await getPromise)
+    expect(await readText(got.value)).toBe("second")
   })
 
   it("keeps the later write when overlapping sets resolve out of order", async () => {
@@ -92,9 +90,8 @@ describe("createCacheHandler get/set", () => {
 
     await Promise.all([set1Promise, set2Promise])
 
-    const got = await handler.get("k1", [])
-    expect(got).toBeDefined()
-    expect(await readText(got!.value)).toBe("second")
+    const got = requireEntry(await handler.get("k1", []))
+    expect(await readText(got.value)).toBe("second")
   })
 
   it("waits for an in-flight set before get", async () => {
@@ -108,9 +105,8 @@ describe("createCacheHandler get/set", () => {
     const getPromise = handler.get("k1", [])
     resolveEntry(makeEntry())
     await setPromise
-    const got = await getPromise
-    expect(got).toBeDefined()
-    expect(await readText(got!.value)).toBe("hello")
+    const got = requireEntry(await getPromise)
+    expect(await readText(got.value)).toBe("hello")
   })
 
   it("does not throw when a queued pendingEntry rejects behind a slow set", async () => {
@@ -148,9 +144,8 @@ describe("createCacheHandler get/set", () => {
 
     expect(unhandledRejections).toEqual([])
 
-    const got = await handler.get("k1", [])
-    expect(got).toBeDefined()
-    expect(await readText(got!.value)).toBe("first")
+    const got = requireEntry(await handler.get("k1", []))
+    expect(await readText(got.value)).toBe("first")
   })
 
   it("discards the write when the value stream errors", async () => {
@@ -208,9 +203,9 @@ describe("createCacheHandler tags", () => {
     const handler = createCacheHandler(createMemoryStore())
     await handler.set("k1", pending(makeEntry({ tags: ["posts"], timestamp: Date.now() - 1000 })))
     await handler.updateTags(["posts"], { expire: 60 })
-    const got = await handler.get("k1", [])
-    expect(got?.revalidate).toBe(-1)
-    expect(await readText(got!.value)).toBe("hello")
+    const got = requireEntry(await handler.get("k1", []))
+    expect(got.revalidate).toBe(-1)
+    expect(await readText(got.value)).toBe("hello")
   })
 
   it("getExpiration returns the max expired timestamp", async () => {
@@ -294,3 +289,11 @@ describe("createCacheHandler errors", () => {
     errorSpy.mockRestore()
   })
 })
+
+function requireEntry<T>(value: T | undefined): T {
+  expect(value).toBeDefined()
+  if (value === undefined) {
+    throw new Error("expected cache entry")
+  }
+  return value
+}

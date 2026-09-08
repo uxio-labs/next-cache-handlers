@@ -11,43 +11,47 @@ export function createMemoryStore(): MemoryStore {
   const refs = new Map<string, Set<string>>()
 
   return {
-    async getEntry(hash) {
-      return entries.get(hash)
+    getEntry(hash) {
+      return Promise.resolve(entries.get(hash))
     },
-    async setEntry(hash, entry, ttlSec) {
+    setEntry(hash, entry, ttlSec) {
       entries.set(hash, entry)
       ttls.set(hash, ttlSec)
+      return Promise.resolve()
     },
-    async deleteEntry(hash) {
+    deleteEntry(hash) {
       const existing = entries.get(hash)
       entries.delete(hash)
       ttls.delete(hash)
-      return existing
+      return Promise.resolve(existing)
     },
-    async getTagManifest() {
-      return { ...tags }
+    getTagManifest() {
+      return Promise.resolve({ ...tags })
     },
-    async setTagEntries(entriesToSet) {
+    setTagEntries(entriesToSet) {
       Object.assign(tags, entriesToSet)
+      return Promise.resolve()
     },
-    async addTagRefs(tag, hashes) {
+    addTagRefs(tag, hashes) {
       const set = refs.get(tag) ?? new Set<string>()
       for (const h of hashes) {
         set.add(h)
       }
       refs.set(tag, set)
+      return Promise.resolve()
     },
-    async getTagRefs(tag) {
-      return [...(refs.get(tag) ?? [])]
+    getTagRefs(tag) {
+      return Promise.resolve([...(refs.get(tag) ?? [])])
     },
-    async removeTagRefs(tag, hashes) {
+    removeTagRefs(tag, hashes) {
       const set = refs.get(tag)
       if (!set) {
-        return
+        return Promise.resolve()
       }
       for (const h of hashes) {
         set.delete(h)
       }
+      return Promise.resolve()
     },
     getTtl(hash) {
       return ttls.get(hash)

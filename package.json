@@ -37,15 +37,15 @@
       "default": "./dist/redis.js"
     }
   },
-  "packageManager": "pnpm@11.20.0+sha512.9a6f330a95b66446ea088faf1521405a8a01f07fde7124cc9958dfed52d4bb436737e65b08f85f37b46fcba375092558ac51262b816844b22f63406ed166bfee",
+  "packageManager": "pnpm@12.3.4+sha512.961aa41fb077da3a04a441d9f8e15ebc0c96da8ef710b2eb67bf9ee7cb0610eabd48f1fd85f51cffe73846785fa0f87c56a3a872a1d893f8446741b5cce45457",
   "scripts": {
     "dev": "rm -rf dist && tsdown --watch",
     "build": "tsdown --minify",
     "test": "vitest",
-    "lint": "pnpm oxlint",
-    "format": "pnpm oxfmt",
-    "format:check": "pnpm oxfmt --check",
-    "typecheck": "pnpm tsc --noEmit"
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
     "next": "^16",
@@ -57,13 +57,13 @@
     }
   },
   "devDependencies": {
-    "@testcontainers/redis": "^11.14.0",
+    "@testcontainers/redis": "11.14.0",
     "@types/node": "26.1.2",
     "oxfmt": "0.62.0",
     "oxlint": "1.77.0",
     "oxlint-tsgolint": "7.0.2001",
-    "redis": "^5.12.1",
-    "testcontainers": "^11.14.0",
+    "redis": "5.12.1",
+    "testcontainers": "11.14.0",
     "tsdown": "0.22.14",
     "typescript": "7.0.2",
     "vitest": "4.1.10"
