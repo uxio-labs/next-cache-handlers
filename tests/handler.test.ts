@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { createCacheHandler } from "../src/create-cache-handler.ts"
-import { hashCacheKey } from "../src/protocol.ts"
+import { bytesToStream, hashCacheKey } from "../src/protocol.ts"
 import { INFINITY_TTL_SEC } from "../src/types.ts"
 import { makeEntry, pending, readText } from "./helpers/entry.ts"
 import { createMemoryStore } from "./helpers/memory-store.ts"
@@ -34,6 +34,38 @@ describe("createCacheHandler get/set", () => {
     const b = await handler.get("k1", [])
     expect(await readText(a!.value)).toBe("hello")
     expect(await readText(b!.value)).toBe("hello")
+  })
+
+  it("waits for the latest in-flight set when two sets overlap", async () => {
+    const handler = createCacheHandler(createMemoryStore())
+
+    let resolveSet1!: (entry: ReturnType<typeof makeEntry>) => void
+    let resolveSet2!: (entry: ReturnType<typeof makeEntry>) => void
+    const pendingSet1 = new Promise<ReturnType<typeof makeEntry>>((resolve) => {
+      resolveSet1 = resolve
+    })
+    const pendingSet2 = new Promise<ReturnType<typeof makeEntry>>((resolve) => {
+      resolveSet2 = resolve
+    })
+
+    const set1Promise = handler.set("k1", pendingSet1)
+    const set2Promise = handler.set("k1", pendingSet2)
+
+    resolveSet1(
+      makeEntry({ value: bytesToStream(new TextEncoder().encode("first")) }),
+    )
+    await set1Promise
+
+    const getPromise = handler.get("k1", [])
+
+    resolveSet2(
+      makeEntry({ value: bytesToStream(new TextEncoder().encode("second")) }),
+    )
+    await set2Promise
+
+    const got = await getPromise
+    expect(got).toBeDefined()
+    expect(await readText(got!.value)).toBe("second")
   })
 
   it("waits for an in-flight set before get", async () => {

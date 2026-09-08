@@ -80,7 +80,9 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
         console.error("[cache-fn] set failed", error)
       } finally {
         resolvePending()
-        pendingSets.delete(cacheKey)
+        if (pendingSets.get(cacheKey) === pendingPromise) {
+          pendingSets.delete(cacheKey)
+        }
       }
     },
 
