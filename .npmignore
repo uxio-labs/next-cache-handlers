@@ -1,0 +1,22 @@
+# folders
+.github
+.vscode
+node_modules
+
+# codebase
+src
+tests
+
+# config files
+.env*
+pnpm-lock.yaml
+tsconfig.json
+prettier.config.ts
+tsdown.config.ts
+vitest.config.ts
+vite-env.d.ts
+env.d.ts
+debug*.ts
+
+# other
+TESTING.md
