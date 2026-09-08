@@ -113,6 +113,46 @@ describe("createCacheHandler get/set", () => {
     expect(await readText(got!.value)).toBe("hello")
   })
 
+  it("does not throw when a queued pendingEntry rejects behind a slow set", async () => {
+    const handler = createCacheHandler(createMemoryStore())
+
+    let resolveSet1!: (entry: ReturnType<typeof makeEntry>) => void
+    let rejectSet2!: (error: Error) => void
+    const pendingSet1 = new Promise<ReturnType<typeof makeEntry>>((resolve) => {
+      resolveSet1 = resolve
+    })
+    const pendingSet2 = new Promise<ReturnType<typeof makeEntry>>((_resolve, reject) => {
+      rejectSet2 = reject
+    })
+
+    const unhandledRejections: unknown[] = []
+    const onUnhandledRejection = (reason: unknown) => {
+      unhandledRejections.push(reason)
+    }
+    process.on("unhandledRejection", onUnhandledRejection)
+
+    const set1Promise = handler.set("k1", pendingSet1)
+    const set2Promise = handler.set("k1", pendingSet2)
+
+    rejectSet2(new Error("set2 failed"))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    resolveSet1(
+      makeEntry({ value: bytesToStream(new TextEncoder().encode("first")) }),
+    )
+
+    await expect(set1Promise).resolves.toBeUndefined()
+    await expect(set2Promise).resolves.toBeUndefined()
+
+    process.off("unhandledRejection", onUnhandledRejection)
+
+    expect(unhandledRejections).toEqual([])
+
+    const got = await handler.get("k1", [])
+    expect(got).toBeDefined()
+    expect(await readText(got!.value)).toBe("first")
+  })
+
   it("discards the write when the value stream errors", async () => {
     const handler = createCacheHandler(createMemoryStore())
     const boom = new ReadableStream<Uint8Array>({

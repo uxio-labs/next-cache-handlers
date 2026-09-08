@@ -51,6 +51,8 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
     },
 
     async set(cacheKey, pendingEntry) {
+      void pendingEntry.catch(() => {})
+
       let resolvePending = () => {}
       const pendingPromise = new Promise<void>((resolve) => {
         resolvePending = resolve
