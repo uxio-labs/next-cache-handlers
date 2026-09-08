@@ -47,14 +47,14 @@ function createEnvHandler(): CacheHandler {
   if (!url) {
     if (!missingUrlWarned) {
       missingUrlWarned = true
-      console.warn("[cache-fn] REDIS_URL is not set; Redis cache handler is disabled")
+      console.warn("[next-cache-handlers] REDIS_URL is not set; Redis cache handler is disabled")
     }
     return createDisabledHandler()
   }
   return createRedisCacheHandler({
     url,
     database: parseDatabase(process.env.REDIS_DB),
-    prefix: process.env.CACHE_FN_PREFIX || DEFAULT_PREFIX,
+    prefix: process.env.NEXT_CACHE_HANDLERS_PREFIX || DEFAULT_PREFIX,
   })
 }
 

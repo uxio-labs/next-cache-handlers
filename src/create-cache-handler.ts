@@ -84,7 +84,7 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
           await store.addTagRefs(tag, [hash])
         }
       } catch (error) {
-        console.error("[cache-fn] set failed", error)
+        console.error("[next-cache-handlers] set failed", error)
       } finally {
         resolvePending()
         if (pendingSets.get(cacheKey) === pendingPromise) {
@@ -101,7 +101,7 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
           localTagsManifest.set(tag, entry)
         }
       } catch (error) {
-        console.error("[cache-fn] refreshTags failed", error)
+        console.error("[next-cache-handlers] refreshTags failed", error)
       }
     },
 
@@ -163,7 +163,7 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
       try {
         await apply()
       } catch (error) {
-        console.error("[cache-fn] updateTags failed", error)
+        console.error("[next-cache-handlers] updateTags failed", error)
       }
     },
   }

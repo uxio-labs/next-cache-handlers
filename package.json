@@ -1,5 +1,5 @@
 {
-  "name": "cache-fn",
+  "name": "next-cache-handlers",
   "version": "1.0.0",
   "description": "Redis cache handler for Next.js cacheHandlers (\"use cache\")",
   "license": "MIT",
@@ -11,13 +11,13 @@
     "nextjs"
   ],
   "author": "Mattia Dalzocchio <mattiadalzocchio@me.com>",
-  "homepage": "https://github.com/uxio-labs/cache-fn#readme",
+  "homepage": "https://github.com/uxio-labs/next-cache-handlers#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/uxio-labs/cache-fn.git"
+    "url": "git+https://github.com/uxio-labs/next-cache-handlers.git"
   },
   "bugs": {
-    "url": "https://github.com/uxio-labs/cache-fn/issues"
+    "url": "https://github.com/uxio-labs/next-cache-handlers/issues"
   },
   "module": "./dist/index.js",
   "main": "./dist/index.js",

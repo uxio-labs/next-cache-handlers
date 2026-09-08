@@ -24,7 +24,7 @@ export function createRedisStore(options: RedisCacheHandlerOptions): CacheStore 
         ...(options.database !== undefined ? { database: options.database } : {}),
       })
       client.on("error", (error) => {
-        console.error("[cache-fn] Redis client error:", error)
+        console.error("[next-cache-handlers] Redis client error:", error)
       })
     }
     if (!client.isOpen) {

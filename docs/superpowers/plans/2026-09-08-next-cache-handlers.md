@@ -1,10 +1,10 @@
-# cache-fn Redis Handler Implementation Plan
+# next-cache-handlers Redis Handler Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship `cache-fn` as a Next.js 16 `cacheHandlers` library with a Redis backend, a factory, and an env-based `cache-fn/redis` entry.
+**Goal:** Ship `next-cache-handlers` as a Next.js 16 `cacheHandlers` library with a Redis backend, a factory, and an env-based `next-cache-handlers/redis` entry.
 
-**Architecture:** A backend-agnostic `createCacheHandler(store)` implements Next’s `CacheHandler`. Redis is a `CacheStore`. `createRedisCacheHandler` wires them. `src/redis.ts` default-exports the env-configured handler for `require.resolve("cache-fn/redis")`.
+**Architecture:** A backend-agnostic `createCacheHandler(store)` implements Next’s `CacheHandler`. Redis is a `CacheStore`. `createRedisCacheHandler` wires them. `src/redis.ts` default-exports the env-configured handler for `require.resolve("next-cache-handlers/redis")`.
 
 **Tech Stack:** TypeScript ESM, tsdown, Vitest, `redis` (node-redis), Testcontainers Redis, oxlint/oxfmt.
 
@@ -14,7 +14,7 @@
 - Peers: `next` `^16`; `redis` optional peer (also a devDependency).
 - Do not import `next/dist/server/lib/cache-handlers/types`; copy `CacheHandler` / `CacheEntry` in `src/types.ts`.
 - Default key prefix: `next:cache:v1`.
-- Env vars: `REDIS_URL`, optional `REDIS_DB`, optional `CACHE_FN_PREFIX`.
+- Env vars: `REDIS_URL`, optional `REDIS_DB`, optional `NEXT_CACHE_HANDLERS_PREFIX`.
 - `JSON.stringify(Infinity)` is `null` — persist `expire: -1` as the Infinity sentinel.
 - No CLI. No legacy ISR `cacheHandler`. No injected Redis client. No ioredis / Memcached / DynamoDB.
 - `createCacheHandler` must not import `redis`.
@@ -29,7 +29,7 @@
 | `src/create-cache-handler.ts` | Next `CacheHandler` orchestration |
 | `src/redis-store.ts` | `createRedisStore` (`CacheStore` on node-redis) |
 | `src/create-redis-cache-handler.ts` | `createRedisCacheHandler` |
-| `src/redis.ts` | Env default export for `cache-fn/redis` |
+| `src/redis.ts` | Env default export for `next-cache-handlers/redis` |
 | `src/index.ts` | Public barrel |
 | `tests/helpers/memory-store.ts` | In-memory `CacheStore` + TTL inspection |
 | `tests/helpers/entry.ts` | Stream / `CacheEntry` test helpers |
@@ -681,7 +681,7 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
           await store.addTagRefs(tag, [hash])
         }
       } catch (error) {
-        console.error("[cache-fn] set failed", error)
+        console.error("[next-cache-handlers] set failed", error)
       } finally {
         resolvePending()
         pendingSets.delete(cacheKey)
@@ -696,7 +696,7 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
           localTagsManifest.set(tag, entry)
         }
       } catch (error) {
-        console.error("[cache-fn] refreshTags failed", error)
+        console.error("[next-cache-handlers] refreshTags failed", error)
       }
     },
 
@@ -758,7 +758,7 @@ export function createCacheHandler(store: CacheStore): CacheHandler {
       try {
         await apply()
       } catch (error) {
-        console.error("[cache-fn] updateTags failed", error)
+        console.error("[next-cache-handlers] updateTags failed", error)
       }
     },
   }
@@ -1085,7 +1085,7 @@ export function createRedisStore(options: RedisCacheHandlerOptions): CacheStore 
         ...(options.database !== undefined ? { database: options.database } : {}),
       })
       client.on("error", (error) => {
-        console.error("[cache-fn] Redis client error:", error)
+        console.error("[next-cache-handlers] Redis client error:", error)
       })
     }
     if (!client.isOpen) {
@@ -1222,7 +1222,7 @@ git commit -m "feat: add Redis cache store and factory"
 
 **Interfaces:**
 - Consumes: `createRedisCacheHandler`, `createCacheHandler`, `DEFAULT_PREFIX`
-- Produces: `cache-fn` barrel exports; `cache-fn/redis` default export
+- Produces: `next-cache-handlers` barrel exports; `next-cache-handlers/redis` default export
 
 - [ ] **Step 1: Write failing env-handler tests**
 
@@ -1238,11 +1238,11 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe("cache-fn/redis env handler", () => {
+describe("next-cache-handlers/redis env handler", () => {
   it("is always-miss and warns once when REDIS_URL is missing", async () => {
     vi.stubEnv("REDIS_URL", "")
     vi.stubEnv("REDIS_DB", "")
-    vi.stubEnv("CACHE_FN_PREFIX", "")
+    vi.stubEnv("NEXT_CACHE_HANDLERS_PREFIX", "")
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
     const mod = await import("../src/redis.ts")
     const handler = mod.default
@@ -1312,14 +1312,14 @@ function createEnvHandler(): CacheHandler {
   if (!url) {
     if (!missingUrlWarned) {
       missingUrlWarned = true
-      console.warn("[cache-fn] REDIS_URL is not set; Redis cache handler is disabled")
+      console.warn("[next-cache-handlers] REDIS_URL is not set; Redis cache handler is disabled")
     }
     return createDisabledHandler()
   }
   return createRedisCacheHandler({
     url,
     database: parseDatabase(process.env.REDIS_DB),
-    prefix: process.env.CACHE_FN_PREFIX || DEFAULT_PREFIX,
+    prefix: process.env.NEXT_CACHE_HANDLERS_PREFIX || DEFAULT_PREFIX,
   })
 }
 
@@ -1344,7 +1344,7 @@ export type {
 Replace `README.md` with:
 
 ```md
-# cache-fn
+# next-cache-handlers
 
 Redis cache handler for Next.js 16 [`cacheHandlers`](https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheHandlers) (`"use cache"` / `"use cache: remote"`).
 
@@ -1353,7 +1353,7 @@ Next.js requires a **filesystem path** to a module whose default export is the h
 ## Install
 
 ```bash
-pnpm add cache-fn redis
+pnpm add next-cache-handlers redis
 pnpm add -D next@16
 ```
 
@@ -1372,8 +1372,8 @@ const require = createRequire(import.meta.url)
 
 const nextConfig: NextConfig = {
   cacheHandlers: {
-    default: require.resolve("cache-fn/redis"),
-    remote: require.resolve("cache-fn/redis"),
+    default: require.resolve("next-cache-handlers/redis"),
+    remote: require.resolve("next-cache-handlers/redis"),
   },
 }
 
@@ -1386,7 +1386,7 @@ Environment:
 |---|---|---|
 | `REDIS_URL` | yes | Redis connection URL. If unset, the handler loads but always misses (so `next build` survives). |
 | `REDIS_DB` | no | Logical Redis database index |
-| `CACHE_FN_PREFIX` | no | Key prefix. Default `next:cache:v1` |
+| `NEXT_CACHE_HANDLERS_PREFIX` | no | Key prefix. Default `next:cache:v1` |
 
 ### Factory (custom URL / db / prefix)
 
@@ -1394,7 +1394,7 @@ Create a local file Next can resolve:
 
 ```js
 // cache-handler.js
-import { createRedisCacheHandler } from "cache-fn"
+import { createRedisCacheHandler } from "next-cache-handlers"
 
 export default createRedisCacheHandler({
   url: process.env.REDIS_URL,
@@ -1444,7 +1444,7 @@ git commit -m "feat: add env Redis handler and usage README"
 
 | Spec requirement | Task |
 |---|---|
-| `require.resolve("cache-fn/redis")` env handler | 6 |
+| `require.resolve("next-cache-handlers/redis")` env handler | 6 |
 | Factory `{ url, database?, prefix? }` | 5 |
 | `createCacheHandler` + `CacheStore` | 1–2 |
 | SHA-256 keys, prefix layout, lazy connect | 1, 5 |

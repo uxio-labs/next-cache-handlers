@@ -8,11 +8,11 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe("cache-fn/redis env handler", () => {
+describe("next-cache-handlers/redis env handler", () => {
   it("is always-miss and warns once when REDIS_URL is missing", async () => {
     vi.stubEnv("REDIS_URL", "")
     vi.stubEnv("REDIS_DB", "")
-    vi.stubEnv("CACHE_FN_PREFIX", "")
+    vi.stubEnv("NEXT_CACHE_HANDLERS_PREFIX", "")
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
     const mod = await import("../src/redis.ts")
     const handler = mod.default

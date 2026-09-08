@@ -1,4 +1,4 @@
-# cache-fn — Next.js `cacheHandlers` library
+# next-cache-handlers — Next.js `cacheHandlers` library
 
 Date: 2026-09-08
 
@@ -8,7 +8,7 @@ Next.js 16 `'use cache'` / `'use cache: remote'` store entries in process memory
 
 Next.js configures custom storage through `cacheHandlers`, which must be **filesystem paths** to modules whose **default export** is a `CacheHandler`. A factory result cannot be passed in `next.config`.
 
-This package ships a Redis handler that apps can resolve with `require.resolve("cache-fn/redis")`, plus a factory for custom URL / database / prefix. Memcached and DynamoDB are planned later; v1 is Redis only.
+This package ships a Redis handler that apps can resolve with `require.resolve("next-cache-handlers/redis")`, plus a factory for custom URL / database / prefix. Memcached and DynamoDB are planned later; v1 is Redis only.
 
 Reference implementation: `acme-website/cache-handlers/redis.ts`.
 
@@ -36,8 +36,8 @@ Exports:
 
 | Specifier | Contents |
 |---|---|
-| `cache-fn` | `createRedisCacheHandler`, `createCacheHandler`, `CacheStore` type, related types |
-| `cache-fn/redis` | Default-export env handler |
+| `next-cache-handlers` | `createRedisCacheHandler`, `createCacheHandler`, `CacheStore` type, related types |
+| `next-cache-handlers/redis` | Default-export env handler |
 
 ### Env handler
 
@@ -48,8 +48,8 @@ const require = createRequire(import.meta.url)
 
 const nextConfig = {
   cacheHandlers: {
-    default: require.resolve("cache-fn/redis"),
-    remote: require.resolve("cache-fn/redis"),
+    default: require.resolve("next-cache-handlers/redis"),
+    remote: require.resolve("next-cache-handlers/redis"),
   },
 }
 ```
@@ -58,7 +58,7 @@ Reads:
 
 - `REDIS_URL` — connection URL. If missing, warn once and behave as always-miss (so `next build` / import succeed).
 - `REDIS_DB` — optional non-negative integer (`SELECT`). Invalid values throw when the client is first created.
-- `CACHE_FN_PREFIX` — optional key prefix. Default `next:cache:v1`.
+- `NEXT_CACHE_HANDLERS_PREFIX` — optional key prefix. Default `next:cache:v1`.
 
 Must not connect at import time. Next loads this module during `next build`.
 
@@ -77,7 +77,7 @@ Missing `url` throws at create time. Default `prefix` is `next:cache:v1`.
 Consumers who need options write a local file and point Next at it:
 
 ```js
-import { createRedisCacheHandler } from "cache-fn"
+import { createRedisCacheHandler } from "next-cache-handlers"
 
 export default createRedisCacheHandler({
   url: process.env.REDIS_URL,
@@ -179,7 +179,7 @@ Cache failures degrade to extra renders. They must not take down the app.
 | `getExpiration` | Return `0`. |
 | `updateTags` with `durations.expire === 0` | Propagate (hard expire / `updateTag`). |
 | Other `updateTags` | Log and ignore. |
-| Missing `REDIS_URL` on `cache-fn/redis` | Warn once; always-miss. |
+| Missing `REDIS_URL` on `next-cache-handlers/redis` | Warn once; always-miss. |
 | Missing `url` on `createRedisCacheHandler` | Throw at create time. |
 | Redis client `error` events | Log, do not throw. |
 
@@ -211,7 +211,7 @@ Vitest. Two suites.
 
 ## README
 
-Install `cache-fn`, `redis`, and `next@16`. Document the two wiring styles (package path and factory wrapper), the three env vars, and that `cacheHandlers` values must be resolved paths, not factory results.
+Install `next-cache-handlers`, `redis`, and `next@16`. Document the two wiring styles (package path and factory wrapper), the three env vars, and that `cacheHandlers` values must be resolved paths, not factory results.
 
 ## Implementation notes
 
