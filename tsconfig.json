@@ -3,6 +3,8 @@
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "declaration": true,
     "declarationMap": true,
@@ -20,12 +22,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "src",
-    "tests",
-    "vitest.config.ts",
-    "tsdown.config.ts",
-    "env.d.ts",
-    "vite-env.d.ts"
-  ]
+  "include": ["src", "tests", "vitest.config.ts", "tsdown.config.ts", "env.d.ts", "vite-env.d.ts"]
 }
