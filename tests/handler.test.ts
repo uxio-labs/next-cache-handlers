@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import { createCacheHandler } from "../src/create-cache-handler.ts"
 import { bytesToStream, hashCacheKey } from "../src/protocol.ts"
-import { INFINITY_TTL_SEC } from "../src/types.ts"
+import { INFINITY_TTL_SEC, type CacheStore } from "../src/types.ts"
 import { makeEntry, pending, readText } from "./helpers/entry.ts"
 import { createMemoryStore } from "./helpers/memory-store.ts"
 
@@ -231,5 +231,66 @@ describe("createCacheHandler tags", () => {
     await expect(reader.get("k1", [])).resolves.toBeDefined()
     await reader.refreshTags()
     await expect(reader.get("k1", [])).resolves.toBeUndefined()
+  })
+})
+
+function rejectingStore(overrides: Partial<CacheStore> = {}): CacheStore {
+  const fail = () => Promise.reject(new Error("store down"))
+  return {
+    getEntry: fail,
+    setEntry: fail,
+    deleteEntry: fail,
+    getTagManifest: fail,
+    setTagEntries: fail,
+    addTagRefs: fail,
+    getTagRefs: fail,
+    removeTagRefs: fail,
+    ...overrides,
+  }
+}
+
+describe("createCacheHandler errors", () => {
+  it("get returns undefined when the store rejects", async () => {
+    const handler = createCacheHandler(rejectingStore())
+    await expect(handler.get("k1", [])).resolves.toBeUndefined()
+  })
+
+  it("set does not throw when the store rejects", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const handler = createCacheHandler(rejectingStore())
+    await expect(handler.set("k1", pending(makeEntry()))).resolves.toBeUndefined()
+    errorSpy.mockRestore()
+  })
+
+  it("refreshTags keeps the previous manifest when the store rejects", async () => {
+    const store = createMemoryStore()
+    const handler = createCacheHandler(store)
+    await handler.set("k1", pending(makeEntry({ tags: ["posts"], timestamp: Date.now() - 1000 })))
+    await handler.updateTags(["posts"])
+    store.getTagManifest = () => Promise.reject(new Error("store down"))
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    await expect(handler.refreshTags()).resolves.toBeUndefined()
+    errorSpy.mockRestore()
+    await expect(handler.get("k1", [])).resolves.toBeUndefined()
+  })
+
+  it("propagates store errors for hard updateTags({ expire: 0 })", async () => {
+    const handler = createCacheHandler(
+      rejectingStore({
+        setTagEntries: () => Promise.reject(new Error("store down")),
+      }),
+    )
+    await expect(handler.updateTags(["posts"], { expire: 0 })).rejects.toThrow("store down")
+  })
+
+  it("swallows store errors for soft updateTags", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const handler = createCacheHandler(
+      rejectingStore({
+        setTagEntries: () => Promise.reject(new Error("store down")),
+      }),
+    )
+    await expect(handler.updateTags(["posts"])).resolves.toBeUndefined()
+    errorSpy.mockRestore()
   })
 })
