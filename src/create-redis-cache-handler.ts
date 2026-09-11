@@ -1,9 +1,9 @@
-import { createCacheHandler } from "./create-cache-handler.ts"
+import { createCacheHandlerFactory } from "./create-cache-handler.ts"
 import { createRedisStore } from "./redis-store.ts"
 
-import type { CacheHandler, RedisCacheHandlerOptions } from "./types.ts"
+import type { RedisCacheHandlerOptions } from "./types.ts"
 
-export function createRedisCacheHandler(options: RedisCacheHandlerOptions): CacheHandler {
+export function validateRedisCacheHandlerOptions(options: RedisCacheHandlerOptions): void {
   if (typeof options.url !== "string" || options.url.length === 0) {
     throw new Error("createRedisCacheHandler: url is required")
   }
@@ -15,5 +15,11 @@ export function createRedisCacheHandler(options: RedisCacheHandlerOptions): Cach
       `createRedisCacheHandler: database must be a non-negative integer, got ${JSON.stringify(options.database)}`,
     )
   }
-  return createCacheHandler(createRedisStore(options))
 }
+
+export const createRedisCacheHandler = createCacheHandlerFactory(
+  (options: RedisCacheHandlerOptions) => {
+    validateRedisCacheHandlerOptions(options)
+    return createRedisStore(options)
+  },
+)

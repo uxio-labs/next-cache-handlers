@@ -4,7 +4,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { createRedisCacheHandler } from "../src/create-redis-cache-handler.ts"
 import { hashCacheKey } from "../src/protocol.ts"
+import redis from "../src/redis.ts"
 import { makeEntry, pending, readText } from "./helpers/entry.ts"
+import { loadHandlerFromPath } from "./helpers/load-handler.ts"
 
 describe("createRedisCacheHandler", () => {
   it("throws when url is missing", () => {
@@ -110,5 +112,17 @@ describe("Redis cache handler", () => {
     await a.set("k1", pending(makeEntry({ tags: ["posts"] })))
     await expect(b.get("k1", [])).resolves.toBeUndefined()
     await expect(a.get("k1", [])).resolves.toBeDefined()
+  })
+
+  it("loads a handler from the redis(config) path", async () => {
+    const handler = await loadHandlerFromPath(redis({ url, prefix: "t-factory-path" }))
+    await handler.set("k1", pending(makeEntry({ tags: ["posts"], stale: 4 })))
+    const got = await handler.get("k1", [])
+    expect(got?.tags).toEqual(["posts"])
+    expect(got?.stale).toBe(4)
+    expect(got).toBeDefined()
+    if (got) {
+      expect(await readText(got.value)).toBe("hello")
+    }
   })
 })

@@ -1,4 +1,4 @@
-export { createCacheHandler } from "./create-cache-handler.ts"
+export { createCacheHandler, createCacheHandlerFactory } from "./create-cache-handler.ts"
 export { createRedisCacheHandler } from "./create-redis-cache-handler.ts"
 export type {
   CacheEntry,

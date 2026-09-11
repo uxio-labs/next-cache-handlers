@@ -13,26 +13,42 @@ pnpm add -D next@16
 
 ## Usage
 
-### Env handler (no local file)
+`cacheHandlers` values must be filesystem paths. `next-cache-handlers/redis` is a function that
+takes the same config as `createRedisCacheHandler` and returns a path Next can resolve.
 
 ```ts
 // next.config.ts
-import { createRequire } from "node:module"
+import redis from "next-cache-handlers/redis"
 import type { NextConfig } from "next"
-
-const require = createRequire(import.meta.url)
 
 const nextConfig: NextConfig = {
   cacheHandlers: {
-    default: require.resolve("next-cache-handlers/redis"),
-    remote: require.resolve("next-cache-handlers/redis"),
+    default: redis({
+      url: process.env.REDIS_URL!,
+      database: 1,
+      prefix: "myapp",
+    }),
+    remote: redis({
+      url: process.env.REDIS_URL!,
+      database: 1,
+      prefix: "myapp",
+    }),
   },
 }
 
 export default nextConfig
 ```
 
-Environment:
+Call `redis()` with no argument to read environment variables instead:
+
+```ts
+const nextConfig: NextConfig = {
+  cacheHandlers: {
+    default: redis(),
+    remote: redis(),
+  },
+}
+```
 
 | Variable                     | Required | Description                                                                                      |
 | ---------------------------- | -------- | ------------------------------------------------------------------------------------------------ |
@@ -40,31 +56,16 @@ Environment:
 | `REDIS_DB`                   | no       | Logical Redis database index. Invalid values throw when the handler loads if `REDIS_URL` is set. |
 | `NEXT_CACHE_HANDLERS_PREFIX` | no       | Key prefix. Default `next:cache:v1`                                                              |
 
-### Factory (custom URL / db / prefix)
+### Programmatic factory
 
-Create a local file Next can resolve:
+`createRedisCacheHandler` still returns the handler object (for tests or a local file):
 
-```js
-// cache-handler.js
+```ts
 import { createRedisCacheHandler } from "next-cache-handlers"
 
-export default createRedisCacheHandler({
-  url: process.env.REDIS_URL,
+const handler = createRedisCacheHandler({
+  url: process.env.REDIS_URL!,
   database: 1,
   prefix: "myapp",
 })
-```
-
-```ts
-// next.config.ts
-import { createRequire } from "node:module"
-
-const require = createRequire(import.meta.url)
-
-export default {
-  cacheHandlers: {
-    default: require.resolve("./cache-handler.js"),
-    remote: require.resolve("./cache-handler.js"),
-  },
-}
 ```

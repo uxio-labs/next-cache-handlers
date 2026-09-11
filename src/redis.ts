@@ -1,61 +1,36 @@
-import { createCacheHandler } from "./create-cache-handler.ts"
-import { createRedisCacheHandler } from "./create-redis-cache-handler.ts"
-import { DEFAULT_PREFIX } from "./types.ts"
+import { createRequire } from "node:module"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
-import type { CacheHandler, CacheStore } from "./types.ts"
+import { createCacheHandlerAdapter } from "./create-cache-handler-adapter.ts"
+import { validateRedisCacheHandlerOptions } from "./create-redis-cache-handler.ts"
 
-function parseDatabase(raw: string | undefined): number | undefined {
-  if (raw === undefined || raw === "") {
-    return undefined
+import type { RedisCacheHandlerOptions } from "./types.ts"
+
+function resolveFactoryHref(): string {
+  const require = createRequire(import.meta.url)
+  try {
+    return pathToFileURL(require.resolve("next-cache-handlers")).href
+  } catch {
+    return pathToFileURL(fileURLToPath(new URL("./index.ts", import.meta.url))).href
   }
-  if (!/^\d+$/.test(raw)) {
-    throw new Error(`REDIS_DB must be a non-negative integer, got ${JSON.stringify(raw)}`)
-  }
-  const database = Number.parseInt(raw, 10)
-  if (!Number.isSafeInteger(database)) {
-    throw new Error(`REDIS_DB must be a non-negative safe integer, got ${JSON.stringify(raw)}`)
-  }
-  return database
 }
 
-function createDisabledHandler(): CacheHandler {
-  const store: CacheStore = {
-    getEntry() {
-      return Promise.resolve(undefined)
-    },
-    async setEntry() {},
-    deleteEntry() {
-      return Promise.resolve(undefined)
-    },
-    getTagManifest() {
-      return Promise.resolve({})
-    },
-    async setTagEntries() {},
-    async addTagRefs() {},
-    getTagRefs() {
-      return Promise.resolve([])
-    },
-    async removeTagRefs() {},
-  }
-  return createCacheHandler(store)
+function resolveEnvHandlerPath(): string {
+  const ext = import.meta.url.endsWith(".ts") ? ".ts" : ".js"
+  return fileURLToPath(new URL(`./redis-env${ext}`, import.meta.url))
 }
 
-let missingUrlWarned = false
+const resolveConfigured = createCacheHandlerAdapter({
+  factoryHref: resolveFactoryHref(),
+  factoryName: "createRedisCacheHandler",
+})
 
-function createEnvHandler(): CacheHandler {
-  const url = process.env.REDIS_URL
-  if (!url) {
-    if (!missingUrlWarned) {
-      missingUrlWarned = true
-      console.warn("[next-cache-handlers] REDIS_URL is not set; Redis cache handler is disabled")
-    }
-    return createDisabledHandler()
+export function redis(options?: RedisCacheHandlerOptions): string {
+  if (options === undefined) {
+    return resolveEnvHandlerPath()
   }
-  return createRedisCacheHandler({
-    url,
-    database: parseDatabase(process.env.REDIS_DB),
-    prefix: process.env.NEXT_CACHE_HANDLERS_PREFIX || DEFAULT_PREFIX,
-  })
+  validateRedisCacheHandlerOptions(options)
+  return resolveConfigured(options)
 }
 
-export default createEnvHandler()
+export default redis

@@ -8,7 +8,14 @@ import {
   hashCacheKey,
   readStreamToBuffer,
 } from "./protocol.ts"
+
 import type { CacheHandler, CacheStore, StoredTagEntry } from "./types.ts"
+
+export function createCacheHandlerFactory<TOptions>(
+  createStore: (options: TOptions) => CacheStore,
+): (options: TOptions) => CacheHandler {
+  return (options) => createCacheHandler(createStore(options))
+}
 
 export function createCacheHandler(store: CacheStore): CacheHandler {
   const localTagsManifest = new Map<string, StoredTagEntry>()
