@@ -1,6 +1,9 @@
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
+import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { resolveCacheHandlerSpecifier } from "../src/create-cache-handler-adapter.ts"
 import { createCacheHandlerFactory } from "../src/create-cache-handler.ts"
 import { makeEntry, pending, readText } from "./helpers/entry.ts"
 import { loadHandlerFromPath } from "./helpers/load-handler.ts"
@@ -10,6 +13,29 @@ afterEach(() => {
   vi.resetModules()
   vi.unstubAllEnvs()
   vi.restoreAllMocks()
+})
+
+describe("resolveCacheHandlerSpecifier", () => {
+  it("uses the package name when that file can resolve it", () => {
+    const fromFile = fileURLToPath(new URL("../src/redis.ts", import.meta.url))
+    expect(resolveCacheHandlerSpecifier(fromFile, "next-cache-handlers")).toBe(
+      "next-cache-handlers",
+    )
+  })
+
+  it("uses a relative path from a cache file inside this package", () => {
+    const fromFile = join(
+      process.cwd(),
+      "node_modules",
+      ".cache",
+      "next-cache-handlers",
+      "handler.mjs",
+    )
+    const specifier = resolveCacheHandlerSpecifier(fromFile, "next-cache-handlers")
+    expect(specifier.startsWith(".")).toBe(true)
+    expect(specifier).not.toContain("file:")
+    expect(specifier.endsWith("dist/index.js")).toBe(true)
+  })
 })
 
 describe("createCacheHandlerFactory", () => {
@@ -41,6 +67,9 @@ describe("next-cache-handlers/redis factory", () => {
     expect(typeof handlerPath).toBe("string")
     expect(handlerPath.endsWith(".mjs")).toBe(true)
     expect(existsSync(handlerPath)).toBe(true)
+
+    const source = readFileSync(handlerPath, "utf8")
+    expect(source).not.toContain("file://")
 
     const handler = await loadHandlerFromPath(handlerPath)
     expect(typeof handler.get).toBe("function")

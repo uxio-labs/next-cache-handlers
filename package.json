@@ -1,6 +1,6 @@
 {
   "name": "next-cache-handlers",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Redis cache handler for Next.js cacheHandlers (\"use cache\")",
   "license": "MIT",
   "type": "module",
