@@ -2,17 +2,18 @@ import { createHash } from "node:crypto"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { tmpdir } from "node:os"
-import { dirname, join, relative, sep } from "node:path"
+import { join } from "node:path"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
 export function resolveCacheHandlerSpecifier(fromFile: string, packageName: string): string {
   try {
     createRequire(fromFile).resolve(packageName)
     return packageName
   } catch {
-    const entry = createRequire(import.meta.url).resolve(packageName)
-    const rel = relative(dirname(fromFile), entry)
-    const normalized = rel.split(sep).join("/")
-    return normalized.startsWith(".") ? normalized : `./${normalized}`
+    // Tests import this module before `pnpm build`, so dist/index.js does not
+    // exist yet. Point the generated handler at the TypeScript source instead
+    // of an absolute pnpm path.
+    return pathToFileURL(fileURLToPath(new URL("./index.ts", import.meta.url))).href
   }
 }
 

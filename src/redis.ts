@@ -14,10 +14,8 @@ function resolveEnvHandlerPath(): string {
   return fileURLToPath(new URL(`./redis-env${ext}`, import.meta.url))
 }
 
-// Package name when the app can resolve it. A relative path is only for this
-// repo's tests, where the generated file sits inside the package's own
-// node_modules and cannot import the package name. Never an absolute file URL:
-// that path is the build machine's pnpm store and is missing on Vercel.
+// Installed apps import "next-cache-handlers" by name. This repo's tests run
+// before dist exists, so they fall back to the TypeScript source.
 const resolveConfigured = createCacheHandlerAdapter({
   specifier: resolveCacheHandlerSpecifier(
     join(process.cwd(), "node_modules", ".cache", "next-cache-handlers", "handler.mjs"),

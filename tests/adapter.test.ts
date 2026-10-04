@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { fileURLToPath } from "node:url"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { resolveCacheHandlerSpecifier } from "../src/create-cache-handler-adapter.ts"
@@ -17,24 +17,26 @@ afterEach(() => {
 
 describe("resolveCacheHandlerSpecifier", () => {
   it("uses the package name when that file can resolve it", () => {
-    const fromFile = fileURLToPath(new URL("../src/redis.ts", import.meta.url))
+    const root = mkdtempSync(join(tmpdir(), "next-cache-handlers-"))
+    const packageDir = join(root, "node_modules", "next-cache-handlers")
+    mkdirSync(packageDir, { recursive: true })
+    writeFileSync(
+      join(packageDir, "package.json"),
+      JSON.stringify({ name: "next-cache-handlers", type: "module", exports: "./index.js" }),
+    )
+    writeFileSync(join(packageDir, "index.js"), "export {}\n")
+    const fromFile = join(root, "node_modules", ".cache", "next-cache-handlers", "handler.mjs")
+
     expect(resolveCacheHandlerSpecifier(fromFile, "next-cache-handlers")).toBe(
       "next-cache-handlers",
     )
   })
 
-  it("uses a relative path from a cache file inside this package", () => {
-    const fromFile = join(
-      process.cwd(),
-      "node_modules",
-      ".cache",
-      "next-cache-handlers",
-      "handler.mjs",
-    )
+  it("falls back to the source entry when the package is not installed", () => {
+    const fromFile = join(mkdtempSync(join(tmpdir(), "next-cache-handlers-missing-")), "handler.mjs")
     const specifier = resolveCacheHandlerSpecifier(fromFile, "next-cache-handlers")
-    expect(specifier.startsWith(".")).toBe(true)
-    expect(specifier).not.toContain("file:")
-    expect(specifier.endsWith("dist/index.js")).toBe(true)
+    expect(specifier.endsWith("/src/index.ts")).toBe(true)
+    expect(specifier).not.toContain(".pnpm")
   })
 })
 
@@ -69,7 +71,7 @@ describe("next-cache-handlers/redis factory", () => {
     expect(existsSync(handlerPath)).toBe(true)
 
     const source = readFileSync(handlerPath, "utf8")
-    expect(source).not.toContain("file://")
+    expect(source).not.toContain(".pnpm")
 
     const handler = await loadHandlerFromPath(handlerPath)
     expect(typeof handler.get).toBe("function")
